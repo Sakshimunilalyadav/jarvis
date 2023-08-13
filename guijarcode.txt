@@ -1,0 +1,246 @@
+import sys
+import pyttsx3 #pip install pyttsx3
+import speech_recognition as sr #pip install speechRecognition
+import datetime
+import webbrowser
+import wikipedia #pip install wikipedia
+import pywhatkit #pip install pywhatkit
+import os
+import requests #pip install requests
+from bs4 import BeautifulSoup #pip install bs4(for current temperature)
+from urllib.request import urlopen
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QTimer, QTime, QDate, Qt
+from PyQt5.QtGui import QMovie
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.uic import loadUiType
+from gui import Ui_gui
+
+
+engine = pyttsx3.init('sapi5')
+voices = engine.getProperty('voices')
+# print(voices[1].id)
+engine.setProperty('voice', voices[0].id)
+
+def speak(audio):
+    engine.say(audio)
+    engine.runAndWait()
+
+
+def wishMe():
+    hour = int(datetime.datetime.now().hour)
+    if hour>=0 and hour<12:
+        speak("Good Morning!")
+
+    elif hour>=12 and hour<18:
+        speak("Good Afternoon!")   
+
+    else:
+        speak("Good Evening!")  
+
+    speak("hello! I am Jarvis. Please tell me how may I help you")       
+
+class MainThread(QThread):
+    def __init__(self):
+        super(MainThread,self).__init__()
+
+    def run(self):
+        self.TaskExecution()    
+    
+
+    def takeCommand(self): #It takes microphone input from the user and returns string output
+
+        r = sr.Recognizer()
+        with sr.Microphone() as source:
+            print("Listening...")
+            r.pause_threshold = 1
+            audio = r.listen(source)
+
+        try:
+            print("Recognizing...")    
+            query = r.recognize_google(audio, language='en-in')
+            print(f"User said: {query}\n")
+
+        except Exception as e:
+            # print(e)    
+            print("Ma'am, Say that again please...")
+        # speak("Ma'am, Say that again please...")  
+            return "None"
+        return query
+    
+
+
+    #if __name__ == "__main__":
+    def TaskExecution(self):    
+        wishMe()
+        while True:
+        # if 1:
+            self.query = self.takeCommand()
+
+            # Logic for executing tasks based on query
+            if 'wikipedia' in self.query:
+                webbrowser.open("https://www.wikipedia.org/")
+
+
+            # query for opening calculator
+            elif 'open calculator' in self.query:
+                paths = {'calculator': "C:\\Windows\\System32\\calc.exe"}
+                os.popen(paths['calculator'])
+
+
+            # query for opening cmd
+            elif 'open command prompt' in self.query:
+                paths = {'command prompt':"C:\\Windows\\System32\\cmd.exe"}
+                os.system('start cmd')
+
+
+
+            # query for writing note and creating new jarvis note file 
+            elif "write a note" in self.query:
+                speak("What should i write, ma'am")
+                note = self.takeCommand()
+                file = open('jarvis.txt', 'w')
+                speak("Ma'am, Should i include date and time")
+                snfm = self.takeCommand()
+                if 'yes' in snfm or 'sure' in snfm:
+                    strTime = datetime.datetime.now().strTime("% H:% M:% S")
+                    file.write(strTime)
+                    file.write(" :- ")
+                    file.write(note)
+                else:
+                    file.write(note)
+                speak("done")
+            
+            elif "show note" in self.query:
+                speak("Showing Notes")
+                file = open("jarvis.txt", "r")
+                print(file.read())
+                speak(file.read(6))
+
+            #     self.Notepad()
+            # elif "dismiss" in self.query:
+            #     self.CloseNotepad()
+
+            
+
+            # query for current temperature
+            elif "temperature" in self.query:
+                search = "temperature in a mumbai"
+                url = f"https://www.google.com/search?q={search}"
+                r = requests.get(url)
+                data = BeautifulSoup(r.text,"html.parser")
+                temp = data.find("div",class_="BNeawe").text
+                speak(f"The current {search} is {temp}")
+                print(f"The current {search} is {temp}")
+
+
+            # query for opening youtube
+            elif 'open youtube' in self.query:
+                webbrowser.open("youtube.com") 
+
+
+            # query for opening google
+            elif 'open google' in self.query:
+                webbrowser.open("google.com")
+
+
+            # query for opening stackoverflow website 
+            elif 'open stack overflow' in self.query:
+                webbrowser.open("https://stackoverflow.com/")
+
+
+            # query for opening poki website (games)
+            elif 'play game' in self.query:
+                webbrowser.open("https://poki.com/")   
+
+
+            # query for opening music folder
+            elif 'play music' in self.query:
+                music_dir = 'E:\\MY MUSIC'
+                songs = os.listdir(music_dir)
+                print(songs)    
+                os.startfile(os.path.join(music_dir, songs[0]))
+
+
+            # query for current time
+            elif 'the time' in self.query:
+                strTime = datetime.datetime.now().strftime("%H:%M:%S")    
+                
+                speak(f"maam, the time is {strTime}")
+                print(f"maam, the time is {strTime}")
+
+
+            # query for opening vscode
+            elif 'open code' in self.query:
+                codePath = "C:\\Users\\HP\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"
+                os.startfile(codePath)
+
+            
+            #query for searching any thing on google
+            elif 'search' in self.query:
+                import wikipedia as googleScrap
+                query = self.query.replace("jarvis","")
+                query = self.query.replace("google search","")
+                query = self.query.replace("google","")
+                speak("This is what i found on the web!")
+                pywhatkit.search(query)
+
+                try:
+                    result = googleScrap.summary(query,2)
+                    speak(result)
+
+                except:
+                    speak("No speakable Data Available")
+                    #print(result)
+
+
+            # query for opening notepad
+            elif 'open notepad' in self.query:
+                codePath = "C:\\Windows\\System32\\notepad.exe"
+                os.startfile(codePath)
+
+
+            # query for closing jarvis
+            elif 'jarvis quit' in self.query or 'exit' in self.query or 'close' in self.query:
+                speak("Thank you ma'am for using Jarvis, have a nice day.")
+                exit()
+
+startExecution = MainThread()
+
+class Main(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.ui = Ui_gui()
+        self.ui.setupUi(self)
+        self.ui.pushButton.clicked.connect(self.startTask)
+        self.ui.pushButton_2.clicked.connect(self.close)
+
+    def startTask(self):
+        self.ui.movie = QtGui.QMovie("C:/Users/HP/Desktop/jarvisfile/guijarvis/mic2.gif")
+        self.ui.label.setMovie(self.ui.movie)
+        self.ui.movie.start()
+        self.ui.movie = QtGui.QMovie("C:/Users/HP/Desktop/jarvisfile/guijarvis/mic3.gif")
+        self.ui.label_2.setMovie(self.ui.movie)
+        self.ui.movie.start()
+        timer = QTimer(self)
+        timer.timeout.connect(self.showTime)
+        timer.start(1000)
+        startExecution.start()
+
+
+    def showTime(self):
+        current_time = QTime.currentTime()
+        current_date = QDate.currentDate()
+        label_time = current_time.toString('hh:mm:ss')
+        label_date = current_date.toString(Qt.ISODate)
+        self.ui.textBrowser.setText(label_date)
+        self.ui.textBrowser_2.setText(label_time)
+
+
+app = QApplication(sys.argv)
+gui = Main()
+gui.show()
+exit(app.exec_())
+
